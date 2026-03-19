@@ -1,4 +1,3 @@
-import privacyText from "../../privacy-text.md?raw";
 import { ArrowLeft } from "lucide-react";
 
 import { Link } from "react-router-dom";
@@ -9,93 +8,85 @@ import MarketingNavbar from "@/components/MarketingNavbar";
 
 type PrivacySection = {
   heading: string;
-  lines: string[];
+  paragraphs?: string[];
+  bullets?: string[];
 };
 
-function parsePrivacyText(text: string) {
-  const lines = text
-    .split(/\r?\n/)
-    .map((l) => l.trimEnd())
-    .filter((l) => l.trim().length > 0);
-
-  const effectiveLine = lines[0] ?? "";
-  const effectiveMatch = effectiveLine.match(/^Effective date:\s*(.*)$/i);
-  const effectiveDate = effectiveMatch?.[1]?.trim() ?? "—";
-
-  const sections: PrivacySection[] = [];
-  let current: PrivacySection | null = null;
-
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-
-    if (i === 0) continue; // handled via effectiveDate
-
-    const sectionMatch = line.match(/^(\d+)\.\s+(.*)$/);
-    if (sectionMatch) {
-      if (current) sections.push(current);
-      current = { heading: sectionMatch[2], lines: [] };
-      continue;
-    }
-
-    if (!current) {
-      current = { heading: "Privacy Policy", lines: [] };
-    }
-    current.lines.push(line);
-  }
-
-  if (current) sections.push(current);
-
-  return { effectiveDate, sections };
-}
-
-function isListLine(line: string) {
-  const idx = line.indexOf(":");
-  if (idx <= 0) return false;
-
-  const key = line.slice(0, idx).trim();
-
-  // Heuristic: short "key: value" lines are list items. Sentences like
-  // "This means:" are intentionally excluded by the key-length check.
-  return key.length <= 35;
-}
-
-function renderSectionLines(lines: string[]) {
-  const nodes: React.ReactNode[] = [];
-  let listItems: string[] = [];
-
-  const flushList = () => {
-    if (listItems.length === 0) return;
-    nodes.push(
-      <ul key={`list-${nodes.length}`} className="mt-2 list-disc pl-5">
-        {listItems.map((item) => (
-          <li key={item} className="mt-1">
-            {item}
-          </li>
-        ))}
-      </ul>,
-    );
-    listItems = [];
-  };
-
-  for (const line of lines) {
-    if (isListLine(line)) {
-      listItems.push(line);
-    } else {
-      flushList();
-      nodes.push(
-        <p key={`p-${nodes.length}`} className="mt-3">
-          {line}
-        </p>,
-      );
-    }
-  }
-
-  flushList();
-  return nodes;
-}
+const PRIVACY_POLICY = {
+  effectiveDate: "19/3/2026",
+  intro:
+    "Trade Track (\"we\", \"our\", or \"the app\") respects your privacy and is committed to protecting your personal information. This Privacy Policy explains how we handle the data you provide while using the Trade Track app.",
+  sections: [
+    {
+      heading: "1. Information We Collect",
+      paragraphs: [
+        "Trade Track primarily stores the information you enter in the app, including:",
+      ],
+      bullets: [
+        "Jobs: title, client name, address, description, price, status",
+        "Notes: text notes attached to jobs",
+        "Photos: images attached to jobs",
+        "Signatures: client signatures captured on jobs",
+        "Earnings and tax tracking: rough calculations based on your job data",
+      ],
+    },
+    {
+      heading: "2. Local Storage",
+      paragraphs: [
+        "All data is currently stored locally on your device using SQLite. This means:",
+      ],
+      bullets: [
+        "Your job data, notes, photos, and signatures remain on your device.",
+        "We do not have access to your data.",
+      ],
+    },
+    {
+      heading: "3. Cloud Backup (Future Feature)",
+      paragraphs: [
+        "Trade Track may offer a cloud backup option in the future to help you save and restore your jobs across devices.",
+        "This feature is not currently implemented.",
+        "If and when it is added, you will be informed, and the privacy policy will be updated accordingly.",
+      ],
+    },
+    {
+      heading: "4. Tax and Financial Disclaimer",
+      paragraphs: [
+        "Trade Track provides a rough estimate of tax owed based on the jobs you enter.",
+      ],
+      bullets: [
+        "This is not financial advice.",
+        "You are responsible for checking your local tax rules and reporting obligations.",
+        "Always consult a qualified professional for financial or tax guidance.",
+      ],
+    },
+    {
+      heading: "5. Data Sharing",
+      paragraphs: [
+        "We do not share or sell your personal data to third parties. All data remains on your device unless you choose to export or share it manually (for example, sending an invoice to a client).",
+      ],
+    },
+    {
+      heading: "6. Updates to this Policy",
+      paragraphs: [
+        "We may update this Privacy Policy occasionally to reflect app updates or new features.",
+      ],
+      bullets: [
+        "Any changes will be posted on this page.",
+        "Continued use of the app constitutes acceptance of the updated policy.",
+      ],
+    },
+    {
+      heading: "7. Contact Us",
+      paragraphs: [
+        "If you have questions or concerns about this Privacy Policy, you can contact us at:",
+      ],
+      bullets: ["terry.ward@tibbstech.co.uk"],
+    },
+  ] as PrivacySection[],
+};
 
 function PrivacyPage() {
-  const { effectiveDate, sections } = parsePrivacyText(privacyText);
+  const { effectiveDate, intro, sections } = PRIVACY_POLICY;
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,6 +118,7 @@ function PrivacyPage() {
             <p className="mt-2 text-muted-foreground">
               Your job data stays on your device using SQLite.
             </p>
+            <p className="mt-3">{intro}</p>
           </header>
 
           <div className="mt-8 space-y-10">
@@ -135,15 +127,23 @@ function PrivacyPage() {
                 <h2 className="text-xl font-semibold tracking-tight">
                   {section.heading}
                 </h2>
-                {renderSectionLines(section.lines)}
+                {section.paragraphs?.map((paragraph) => (
+                  <p key={paragraph} className="mt-3">
+                    {paragraph}
+                  </p>
+                ))}
+                {section.bullets && section.bullets.length > 0 ? (
+                  <ul className="mt-2 list-disc pl-5">
+                    {section.bullets.map((bullet) => (
+                      <li key={bullet} className="mt-1">
+                        {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </section>
             ))}
           </div>
-
-          <p className="mt-10 text-xs text-muted-foreground">
-            Note: This page includes placeholders like the effective date and
-            contact email. Replace them before publishing.
-          </p>
         </article>
       </main>
 
